@@ -1,3 +1,28 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "user-avatar",
+      "description": "Default user avatar",
+      "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjE3ODg3ODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "report-1",
+      "description": "Placeholder for a medical report",
+      "imageUrl": "https://images.unsplash.com/photo-1697382608813-df6eb720164f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxkb2N1bWVudCUyMHBhcGVyfGVufDB8fHx8MTc2MTc5NDk2Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "document paper"
+    },
+    {
+      "id": "report-2",
+      "description": "Placeholder for another medical report",
+      "imageUrl": "https://images.unsplash.com/photo-1582719471384-894fbb16e074?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8c2NpZW5jZSUyMGxhYnxlbnwwfHx8fDE3NjE3ODgyNzd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "science lab"
+    },
+    {
+      "id": "report-3",
+      "description": "Placeholder for a health analytics report",
+      "imageUrl": "https://images.unsplash.com/photo-1645102270210-e47d263db8c4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxjaGFydCUyMGdyYXBofGVufDB8fHx8MTc2MTc4OTQ5NHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "chart graph"
+    }
+  ]
 }
