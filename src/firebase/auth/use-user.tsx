@@ -23,7 +23,6 @@ const UserContext = createContext<UserContextValue>({
  */
 export const UserProvider: React.FC<UserProviderProps> = ({children}) => {
   const auth = useAuth();
-  const firestore = useFirestore();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -32,27 +31,13 @@ export const UserProvider: React.FC<UserProviderProps> = ({children}) => {
       setLoading(false);
       return;
     }
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
-      if (user && firestore) {
-        const userRef = doc(firestore, 'users', user.uid);
-        const userDoc = await getDoc(userRef);
-        if (!userDoc.exists()) {
-            const { uid, email, displayName, photoURL } = user;
-            await setDoc(userRef, {
-              uid,
-              email,
-              displayName,
-              photoURL,
-              createdAt: serverTimestamp(),
-            });
-        }
-      }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [auth, firestore]);
+  }, [auth]);
 
   return (
     <UserContext.Provider value={{user, loading}}>
