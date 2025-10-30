@@ -1,12 +1,13 @@
 "use client";
-import { useState } from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useState, useEffect, useMemo } from 'react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Paperclip, Send, Bot, User, File as FileIcon, Loader2 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Send, Bot, User, Loader2 } from 'lucide-react';
 import { answerQuestionsAboutReport } from '@/ai/flows/answer-questions-about-report';
 import { useToast } from "@/hooks/use-toast"
+import { useUser, useFirestore, useCollection } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 type Message = {
   sender: 'user' | 'ai';
@@ -16,31 +17,26 @@ type Message = {
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [file, setFile] = useState<File | null>(null);
-  const [fileDataUri, setFileDataUri] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useUser();
+  const firestore = useFirestore();
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      const reader = new FileReader();
-      reader.onload = (loadEvent) => {
-        setFileDataUri(loadEvent.target?.result as string);
-      };
-      reader.readAsDataURL(selectedFile);
-    }
-  };
+  const reportsRef = useMemo(() => {
+    if (!user || !firestore) return null;
+    return collection(firestore, 'users', user.uid, 'reports');
+  }, [user, firestore]);
+
+  const { data: reports, loading: reportsLoading } = useCollection(reportsRef);
 
   const handleSendMessage = async () => {
     if (input.trim() === '' || isLoading) return;
 
-    if (!fileDataUri) {
+    if (!reports || reports.length === 0) {
         toast({
             variant: "destructive",
-            title: "File Required",
-            description: "Please upload a report file before asking a question.",
+            title: "No Reports",
+            description: "Please upload a report before asking a question.",
         });
         return;
     }
@@ -51,7 +47,8 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
-        const result = await answerQuestionsAboutReport({ reportDataUri: fileDataUri, question: input });
+        const reportTexts = reports.map((report) => report.text);
+        const result = await answerQuestionsAboutReport({ reports: reportTexts, question: input });
         const aiMessage: Message = { sender: 'ai', text: result.answer };
         setMessages((prev) => [...prev, aiMessage]);
     } catch(error) {
@@ -85,7 +82,7 @@ export default function ChatPage() {
                 <AvatarFallback><Bot size={18} /></AvatarFallback>
               </Avatar>
             )}
-            <div className={`rounded-2xl p-3 max-w-md ${msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+            <div className={`rounded-2xl p-3 max-w-lg ${msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
               <p className="text-sm">{msg.text}</p>
             </div>
              {msg.sender === 'user' && (
@@ -95,6 +92,15 @@ export default function ChatPage() {
             )}
           </div>
         ))}
+         {messages.length === 0 && !reportsLoading && (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center text-muted-foreground">
+              <Bot size={48} className="mx-auto" />
+              <p className="mt-2">Ask me anything about your reports.</p>
+              <p className="text-xs">Upload documents in the 'Reports' tab to begin.</p>
+            </div>
+          </div>
+        )}
         {isLoading && (
             <div className="flex items-start gap-3">
                 <Avatar className="w-8 h-8 border">
@@ -108,45 +114,24 @@ export default function ChatPage() {
         )}
       </div>
       <div className="p-4 border-t bg-background">
-        <Card className="glass">
-          <CardContent className="p-2">
-            {file && (
-              <div className="mb-2 flex items-center gap-2 p-2 bg-muted rounded-md text-sm">
-                <FileIcon className="h-4 w-4" />
-                <span className="font-medium truncate">{file.name}</span>
-                <Button variant="ghost" size="icon" className="ml-auto h-6 w-6" onClick={() => { setFile(null); setFileDataUri(null) }}>
-                  <span className="sr-only">Remove file</span>
-                  &times;
-                </Button>
-              </div>
-            )}
             <div className="relative flex items-center">
               <Input
                 type="text"
-                placeholder="Ask a question about your report..."
-                className="pr-24"
+                placeholder={reportsLoading ? "Loading reports..." : "Ask a question about your reports..."}
+                className="pr-12"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                disabled={isLoading || !fileDataUri}
+                disabled={isLoading || reportsLoading || !reports || reports.length === 0}
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
-                <Button asChild variant="ghost" size="icon">
-                  <label htmlFor="file-upload">
-                    <Paperclip className="h-5 w-5" />
-                    <span className="sr-only">Attach file</span>
-                  </label>
-                </Button>
-                <Input id="file-upload" type="file" className="hidden" onChange={handleFileChange} accept=".pdf,image/*" />
-                <Button size="icon" onClick={handleSendMessage} disabled={isLoading}>
+                <Button size="icon" onClick={handleSendMessage} disabled={isLoading || reportsLoading || !input}>
                   <Send className="h-5 w-5" />
                    <span className="sr-only">Send</span>
                 </Button>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-2 px-1">First, upload a PDF or image of your report to start the conversation.</p>
-          </CardContent>
-        </Card>
+            <p className="text-xs text-muted-foreground mt-2 px-1">You can ask questions about all the documents you have uploaded in the Reports page.</p>
       </div>
     </div>
   );

@@ -12,12 +12,8 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const AnswerQuestionsAboutReportInputSchema = z.object({
-  reportDataUri: z
-    .string()
-    .describe(
-      'The report document (PDF or image) as a data URI that must include a MIME type and use Base64 encoding. Expected format: \'data:<mimetype>;base64,<encoded_data>\'.' 
-    ),
-  question: z.string().describe('The question to ask about the report.'),
+  reports: z.array(z.string()).describe("A list of report contents."),
+  question: z.string().describe('The question to ask about the reports.'),
 });
 export type AnswerQuestionsAboutReportInput = z.infer<
   typeof AnswerQuestionsAboutReportInputSchema
@@ -40,9 +36,12 @@ const prompt = ai.definePrompt({
   name: 'answerQuestionsAboutReportPrompt',
   input: {schema: AnswerQuestionsAboutReportInputSchema},
   output: {schema: AnswerQuestionsAboutReportOutputSchema},
-  prompt: `You are an AI assistant that answers questions about user-uploaded reports. Please answer the following question about the report.
+  prompt: `You are an AI assistant that answers questions about user-uploaded reports. Please answer the following question based on the content of the provided reports.
 
-Report: {{media url=reportDataUri}}
+Reports:
+{{#each reports}}
+- {{{this}}}
+{{/each}}
 
 Question: {{{question}}}`,
 });
