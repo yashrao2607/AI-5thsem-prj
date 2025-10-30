@@ -28,27 +28,24 @@ export const UserProvider: React.FC<UserProviderProps> = ({children}) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth || !firestore) {
+    if (!auth) {
       setLoading(false);
       return;
     }
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
-       if (user) {
-        // Create user document in Firestore if it doesn't exist.
-        // This is done asynchronously and doesn't block the loading state.
+      if (user && firestore) {
         const userRef = doc(firestore, 'users', user.uid);
-        getDoc(userRef).then(userDoc => {
-          if (!userDoc.exists()) {
+        const userDoc = await getDoc(userRef);
+        if (!userDoc.exists()) {
             const { uid, email, displayName, photoURL } = user;
-            setDoc(userRef, {
+            await setDoc(userRef, {
               uid,
               email,
               displayName,
               photoURL,
             });
-          }
-        });
+        }
       }
       setLoading(false);
     });
