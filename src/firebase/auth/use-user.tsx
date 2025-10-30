@@ -1,8 +1,8 @@
 'use client';
 import {Auth, onAuthStateChanged, User} from 'firebase/auth';
 import React, {createContext, useContext, useEffect, useState} from 'react';
-import {useAuth} from '../provider';
-import {doc, getDoc, getFirestore, setDoc} from 'firebase/firestore';
+import {useAuth, useFirestore} from '../provider';
+import {doc, getDoc, setDoc} from 'firebase/firestore';
 
 export interface UserProviderProps {
   children: React.ReactNode;
@@ -23,36 +23,38 @@ const UserContext = createContext<UserContextValue>({
  */
 export const UserProvider: React.FC<UserProviderProps> = ({children}) => {
   const auth = useAuth();
+  const firestore = useFirestore();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth) {
+    if (!auth || !firestore) {
       setLoading(false);
       return;
     }
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
-      if (user) {
-        // Create user document in Firestore if it doesn't exist
-        const db = getFirestore();
-        const userRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userRef);
-        if (!userDoc.exists()) {
-          const {uid, email, displayName, photoURL} = user;
-          await setDoc(userRef, {
-            uid,
-            email,
-            displayName,
-            photoURL,
-          });
-        }
+       if (user) {
+        // Create user document in Firestore if it doesn't exist.
+        // This is done asynchronously and doesn't block the loading state.
+        const userRef = doc(firestore, 'users', user.uid);
+        getDoc(userRef).then(userDoc => {
+          if (!userDoc.exists()) {
+            const { uid, email, displayName, photoURL } = user;
+            setDoc(userRef, {
+              uid,
+              email,
+              displayName,
+              photoURL,
+            });
+          }
+        });
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [auth]);
+  }, [auth, firestore]);
 
   return (
     <UserContext.Provider value={{user, loading}}>
