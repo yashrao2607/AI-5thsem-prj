@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -43,16 +44,8 @@ export default function ReportsPage() {
   const readFileAsDataURL = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          resolve(e.target.result as string);
-        } else {
-          reject(new Error("Could not read file data."));
-        }
-      };
-      reader.onerror = (error) => {
-        reject(error);
-      };
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
       reader.readAsDataURL(file);
     });
   }
@@ -66,19 +59,19 @@ export default function ReportsPage() {
     setIsUploading(true);
     
     try {
-      // 1. Read file as Data URL
+      // 1. Read file as Data URL for the AI flow
       const dataUri = await readFileAsDataURL(file);
       
       // 2. Extract text using AI
       const { text } = await extractTextFromDocument({ fileDataUri: dataUri });
 
-      // 3. Upload image to Firebase Storage
+      // 3. Upload file to Firebase Storage
       const storage = getStorage();
-      const storageRef = ref(storage, `users/${user.uid}/reports/${file.name}_${Date.now()}`);
+      const storageRef = ref(storage, `users/${user.uid}/reports/${Date.now()}_${file.name}`);
       const snapshot = await uploadBytes(storageRef, file);
       const imageUrl = await getDownloadURL(snapshot.ref);
 
-      // 4. Save report to Firestore
+      // 4. Save report info to Firestore
       const reportsRef = collection(firestore, 'users', user.uid, 'reports');
       await addDoc(reportsRef, {
         name: file.name,
@@ -113,17 +106,16 @@ export default function ReportsPage() {
   };
   
   const handleAnalyze = async (report: Report) => {
-    if (!report.text) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Cannot analyze this report. Text content is missing.' });
+    if (!report.text && !report.imageUrl) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Cannot analyze this report. No content available.' });
       return;
     }
     setIsAnalyzing(true);
     setAnalysisResult(null);
     setIsModalOpen(true);
     try {
-      // Note: summarizeUploadedReport expects a data URI. 
-      // For simplicity, we are re-using the imageUrl. For a more robust solution,
-      // you might need another flow that takes text as input.
+      // To summarize, we need a data URI. We'll use the image URL and let the AI re-process it.
+      // This is less efficient than using the text directly, but fits the current AI flow.
       const result = await summarizeUploadedReport({ fileDataUri: report.imageUrl });
       setAnalysisResult(result.summary);
     } catch(error) {
