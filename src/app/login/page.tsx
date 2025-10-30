@@ -5,12 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
-import { useAuth } from '@/firebase';
+import { useAuth, FirebaseClientProvider } from '@/firebase';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
-export default function LoginPage() {
+function LoginPageContent() {
   const auth = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -33,11 +33,11 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
-       <div className="absolute inset-0 z-0">
-            <div className="absolute inset-0 bg-background" />
-            <div className="absolute bottom-0 left-[-20%] right-[-20%] top-[-10%] h-[500px] w-full rounded-full bg-[radial-gradient(circle_farthest-side,rgba(var(--primary-rgb),0.15),rgba(255,255,255,0))]" />
-            <div className="absolute bottom-[-20%] right-[0%] top-[-10%] h-[500px] w-full rounded-full bg-[radial-gradient(circle_farthest-side,rgba(var(--accent-rgb),0.1),rgba(255,255,255,0))]" />
-          </div>
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-background" />
+        <div className="absolute bottom-0 left-[-20%] right-[-20%] top-[-10%] h-[500px] w-full rounded-full bg-[radial-gradient(circle_farthest-side,rgba(var(--primary-rgb),0.15),rgba(255,255,255,0))]" />
+        <div className="absolute bottom-[-20%] right-[0%] top-[-10%] h-[500px] w-full rounded-full bg-[radial-gradient(circle_farthest-side,rgba(var(--accent-rgb),0.1),rgba(255,255,255,0))]" />
+      </div>
       <Card className="w-full max-w-sm glass z-10">
         <CardHeader className="text-center">
           <Logo className="justify-center mb-4" />
@@ -59,7 +59,7 @@ export default function LoginPage() {
               </div>
               <Input id="password" type="password" required />
             </div>
-            <Button type="submit" className="w-full" disabled>
+            <Button type="submit" className="w-full">
               Login
             </Button>
             <Button variant="outline" className="w-full" onClick={handleGoogleLogin}>
@@ -76,4 +76,12 @@ export default function LoginPage() {
       </Card>
     </div>
   );
+}
+
+export default function LoginPage() {
+    return (
+        <FirebaseClientProvider>
+            <LoginPageContent />
+        </FirebaseClientProvider>
+    )
 }

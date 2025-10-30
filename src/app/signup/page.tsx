@@ -5,18 +5,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
-import { useAuth } from '@/firebase';
+import { useAuth, FirebaseClientProvider } from '@/firebase';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
-export default function SignupPage() {
+function SignupPageContent() {
   const auth = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
   const handleGoogleSignUp = async () => {
-    if (!auth) return;
+    if (!auth) {
+      toast({
+        variant: 'destructive',
+        title: 'Sign Up Failed',
+        description: 'Authentication service is not available. Please try again later.',
+      });
+      return;
+    }
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
@@ -58,7 +65,7 @@ export default function SignupPage() {
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" />
             </div>
-            <Button type="submit" className="w-full" disabled>
+            <Button type="submit" className="w-full">
               Create an account
             </Button>
             <Button variant="outline" className="w-full" onClick={handleGoogleSignUp}>
@@ -75,4 +82,12 @@ export default function SignupPage() {
       </Card>
     </div>
   );
+}
+
+export default function SignupPage() {
+    return (
+        <FirebaseClientProvider>
+            <SignupPageContent />
+        </FirebaseClientProvider>
+    )
 }
