@@ -40,6 +40,23 @@ export default function ReportsPage() {
 
   const { data: reports, loading: reportsLoading, error } = useCollection(reportsQuery);
 
+  const readFileAsDataURL = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          resolve(e.target.result as string);
+        } else {
+          reject(new Error("Could not read file data."));
+        }
+      };
+      reader.onerror = (error) => {
+        reject(error);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   const handleFileChange = async (files: FileList | null) => {
     if (!files || files.length === 0 || !user || !firestore) return;
     
@@ -49,53 +66,34 @@ export default function ReportsPage() {
     setIsUploading(true);
     
     try {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = async (e) => {
-        try {
-          const dataUri = e.target?.result as string;
-          if (!dataUri) {
-            throw new Error("Could not read file data.");
-          }
+      // 1. Read file as Data URL
+      const dataUri = await readFileAsDataURL(file);
+      
+      // 2. Extract text using AI
+      const { text } = await extractTextFromDocument({ fileDataUri: dataUri });
 
-          // 1. Extract text using AI
-          const { text } = await extractTextFromDocument({ fileDataUri: dataUri });
+      // 3. Upload image to Firebase Storage
+      const storage = getStorage();
+      const storageRef = ref(storage, `users/${user.uid}/reports/${file.name}_${Date.now()}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      const imageUrl = await getDownloadURL(snapshot.ref);
 
-          // 2. Upload image to Firebase Storage
-          const storage = getStorage();
-          const storageRef = ref(storage, `users/${user.uid}/reports/${file.name}_${Date.now()}`);
-          const snapshot = await uploadBytes(storageRef, file);
-          const imageUrl = await getDownloadURL(snapshot.ref);
-
-          // 3. Save report to Firestore
-          const reportsRef = collection(firestore, 'users', user.uid, 'reports');
-          await addDoc(reportsRef, {
-            name: file.name,
-            text: text,
-            imageUrl: imageUrl,
-            createdAt: serverTimestamp(),
-          });
-          
-          toast({ title: 'Success', description: 'Report uploaded and processed successfully.' });
-
-        } catch (err) {
-            console.error("Error processing file:", err);
-            toast({ variant: 'destructive', title: 'Upload Failed', description: 'There was an error processing your report.' });
-        } finally {
-            setIsUploading(false);
-        }
-      };
-
-      reader.onerror = (error) => {
-        console.error("File reading error:", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not read the file.' });
-        setIsUploading(false);
-      }
+      // 4. Save report to Firestore
+      const reportsRef = collection(firestore, 'users', user.uid, 'reports');
+      await addDoc(reportsRef, {
+        name: file.name,
+        text: text,
+        imageUrl: imageUrl,
+        createdAt: serverTimestamp(),
+      });
+      
+      toast({ title: 'Success', description: 'Report uploaded and processed successfully.' });
 
     } catch (err) {
-      console.error(err);
+      console.error("Error processing file:", err);
       toast({ variant: 'destructive', title: 'Upload Failed', description: 'There was an error processing your report.' });
-      setIsUploading(false);
+    } finally {
+        setIsUploading(false);
     }
   };
 
@@ -263,5 +261,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-
-    
