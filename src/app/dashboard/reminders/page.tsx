@@ -55,10 +55,15 @@ export default function RemindersPage() {
     };
 
     try {
-      // IMPORTANT: Replace with your actual EmailJS credentials
+      // IMPORTANT: Replace with your actual EmailJS credentials from your EmailJS account dashboard.
       const serviceID = 'YOUR_SERVICE_ID';
       const templateID = 'YOUR_TEMPLATE_ID';
       const publicKey = 'YOUR_PUBLIC_KEY';
+      
+      // The API call will fail if you have not replaced the placeholder credentials.
+      if (serviceID === 'YOUR_SERVICE_ID' || templateID === 'YOUR_TEMPLATE_ID' || publicKey === 'YOUR_PUBLIC_KEY') {
+        throw new Error('EmailJS credentials are not configured.');
+      }
 
       await emailjs.send(serviceID, templateID, templateParams, publicKey);
       
@@ -71,11 +76,10 @@ export default function RemindersPage() {
       form.reset({ name: '', email: '', message: '', time: '09:00' });
 
     } catch (error: any) {
-      console.error('EmailJS Error:', error);
       toast({
         variant: 'destructive',
         title: 'Error Sending Reminder',
-        description: 'Failed to send email. Please check your EmailJS credentials and configuration.',
+        description: 'Failed to send email. Please ensure you have replaced the placeholder credentials in the code with your actual EmailJS service ID, template ID, and public key.',
       });
     } finally {
       setIsSending(false);
