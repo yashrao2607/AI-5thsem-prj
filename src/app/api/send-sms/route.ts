@@ -18,16 +18,20 @@ export async function POST(request: Request) {
     );
   }
 
-  const params = new URLSearchParams();
-  params.append('authorization', process.env.FAST2SMS_API_KEY);
-  params.append('message', message);
-  params.append('numbers', phone);
-  params.append('route', 'p'); // 'p' for promotional route as per Fast2SMS docs
+  const payload = {
+    route: 'p', // 'p' for promotional route
+    message: message,
+    numbers: phone,
+  };
 
   try {
     const response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
       method: 'POST',
-      body: params,
+      headers: {
+        'authorization': process.env.FAST2SMS_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
     });
 
     const data = await response.json();
@@ -36,7 +40,7 @@ export async function POST(request: Request) {
        return NextResponse.json({ success: true, message: 'SMS sent successfully.' });
     } else {
         // Fast2SMS might return an error message
-        return NextResponse.json({ success: false, message: data.message || 'Failed to send SMS.' }, { status: 500 });
+        return NextResponse.json({ success: false, message: data.message || 'Failed to send SMS.' }, { status: response.status });
     }
   } catch (error) {
     console.error('Fast2SMS API Error:', error);
