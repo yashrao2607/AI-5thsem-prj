@@ -37,21 +37,14 @@ const summarizeUploadedReportFlow = ai.defineFlow(
   },
   async input => {
     const { text } = await ai.generate({
-        model: 'gemini-pro-vision',
+        model: 'googleai/gemini-1.5-flash',
         prompt: `You are an expert AI assistant that summarizes reports and papers.
 
-Summarize the key findings of the following report. Return the summary in a JSON object with a single key "summary".
+Summarize the key findings of the following report.
 
 Report: {{media url=fileDataUri}}`,
     });
 
-    try {
-      const parsed = JSON.parse(text);
-      return SummarizeUploadedReportOutputSchema.parse(parsed);
-    } catch(e) {
-      console.error("Failed to parse JSON from AI response for summary:", e);
-      // Fallback: if parsing fails, wrap the raw text in the expected object structure.
-      return { summary: text };
-    }
+    return { summary: text };
   }
 );

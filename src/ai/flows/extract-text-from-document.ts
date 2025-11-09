@@ -37,19 +37,12 @@ const extractTextFromDocumentFlow = ai.defineFlow(
   },
   async input => {
     const { text } = await ai.generate({
-        model: 'gemini-pro-vision',
-        prompt: `Extract all the text from the following document and return it in a JSON object with a single key "text".
+        model: 'googleai/gemini-pro-vision',
+        prompt: `Extract all the text from the following document.
 
 Document: {{media url=fileDataUri}}`,
     });
     
-    try {
-        const parsed = JSON.parse(text);
-        return ExtractTextFromDocumentOutputSchema.parse(parsed);
-    } catch(e) {
-        console.error("Failed to parse JSON from AI response for text extraction:", e);
-        // Fallback: if parsing fails, wrap the raw text in the expected object structure.
-        return { text: text };
-    }
+    return { text: text };
   }
 );
