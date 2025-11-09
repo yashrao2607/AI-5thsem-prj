@@ -256,7 +256,7 @@ export default function ReportsPage() {
             <DialogDescription>
               AI-powered summary of your report.
             </DialogDescription>
-          </HttpHeader>
+          </DialogHeader>
           <div className="py-4 max-h-[60vh] overflow-y-auto">
             {isAnalyzing ? (
               <div className="flex items-center justify-center h-48">
