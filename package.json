@@ -54,7 +54,9 @@
     "recharts": "^2.15.1",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "^3.24.2"
+    "zod": "^3.24.2",
+    "chromadb": "^1.8.1",
+    "@chroma-core/default-embed": "^0.1.0"
   },
   "devDependencies": {
     "@types/node": "^20",

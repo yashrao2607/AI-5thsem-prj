@@ -9,6 +9,7 @@ import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { summarizeUploadedReport } from '@/ai/flows/summarize-uploaded-report';
 import { extractTextFromDocument } from '@/ai/flows/extract-text-from-document';
+import { indexReport } from '@/ai/flows/index-report-flow';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import { collection, addDoc, serverTimestamp, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
@@ -27,6 +28,7 @@ export default function ReportsPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isIndexing, setIsIndexing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
@@ -57,6 +59,7 @@ export default function ReportsPage() {
     if (!file) return;
 
     setIsUploading(true);
+    setIsIndexing(false);
     
     try {
       // 1. Read file as Data URL for the AI flow
@@ -64,6 +67,10 @@ export default function ReportsPage() {
       
       // 2. Extract text using AI
       const { text } = await extractTextFromDocument({ fileDataUri: dataUri });
+
+      if (!text) {
+        throw new Error("Could not extract text from the document.");
+      }
 
       // 3. Upload file to Firebase Storage
       const storage = getStorage();
@@ -73,20 +80,31 @@ export default function ReportsPage() {
 
       // 4. Save report info to Firestore
       const reportsRef = collection(firestore, 'users', user.uid, 'reports');
-      await addDoc(reportsRef, {
+      const docRef = await addDoc(reportsRef, {
         name: file.name,
         text: text,
         imageUrl: imageUrl,
         createdAt: serverTimestamp(),
       });
       
-      toast({ title: 'Success', description: 'Report uploaded and processed successfully.' });
+      toast({ title: 'Success', description: 'Report uploaded. Now indexing for AI chat...' });
+      setIsUploading(false);
+      setIsIndexing(true);
 
-    } catch (err) {
+      // 5. Index the report in ChromaDB
+      const indexingResult = await indexReport({ text, reportId: docRef.id, userId: user.uid });
+      if (indexingResult.success) {
+        toast({ title: 'Indexing Complete', description: 'You can now ask questions about this report in the chat.' });
+      } else {
+        throw new Error("Failed to index the report for AI chat.");
+      }
+
+    } catch (err: any) {
       console.error("Error processing file:", err);
-      toast({ variant: 'destructive', title: 'Upload Failed', description: 'There was an error processing your report.' });
+      toast({ variant: 'destructive', title: 'Processing Failed', description: err.message || 'There was an error processing your report.' });
     } finally {
         setIsUploading(false);
+        setIsIndexing(false);
     }
   };
 
@@ -144,6 +162,8 @@ export default function ReportsPage() {
       await deleteObject(imageRef);
 
       toast({ title: "Report Deleted", description: `"${report.name}" has been removed.` });
+      // Note: We are not deleting from ChromaDB here for simplicity. 
+      // A production app would need a mechanism to clean up the vector store.
     } catch (error) {
       console.error("Error deleting report:", error);
       toast({ variant: "destructive", title: "Deletion Failed", "description": "Could not delete the report." });
@@ -165,14 +185,14 @@ export default function ReportsPage() {
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
-        className={`border-2 border-dashed transition-colors ${isDragging ? 'border-primary bg-primary/10' : ''} ${!user || isUploading ? 'pointer-events-none opacity-50' : ''}`}
+        className={`border-2 border-dashed transition-colors ${isDragging ? 'border-primary bg-primary/10' : ''} ${!user || isUploading || isIndexing ? 'pointer-events-none opacity-50' : ''}`}
       >
         <label htmlFor="file-upload" className={user ? "cursor-pointer" : "cursor-not-allowed"}>
           <CardContent className="p-6 flex flex-col items-center justify-center space-y-2 text-center">
-            {isUploading ? (
+            {isUploading || isIndexing ? (
               <>
                 <Loader2 className="w-12 h-12 text-muted-foreground animate-spin" />
-                <p className="text-lg font-semibold">Processing your report...</p>
+                <p className="text-lg font-semibold">{isUploading ? 'Uploading & Extracting...' : 'Indexing for AI...'}</p>
                 <p className="text-muted-foreground">This may take a moment. Please wait.</p>
               </>
             ) : (
@@ -182,7 +202,7 @@ export default function ReportsPage() {
                 <p className="text-muted-foreground">PDF or Image files are supported</p>
               </>
             )}
-            <input id="file-upload" type="file" className="hidden" onChange={(e) => handleFileChange(e.target.files)} accept=".pdf,image/*" disabled={!user || isUploading}/>
+            <input id="file-upload" type="file" className="hidden" onChange={(e) => handleFileChange(e.target.files)} accept=".pdf,image/*" disabled={!user || isUploading || isIndexing}/>
           </CardContent>
         </label>
       </Card>
@@ -236,7 +256,7 @@ export default function ReportsPage() {
             <DialogDescription>
               AI-powered summary of your report.
             </DialogDescription>
-          </DialogHeader>
+          </HttpHeader>
           <div className="py-4 max-h-[60vh] overflow-y-auto">
             {isAnalyzing ? (
               <div className="flex items-center justify-center h-48">
