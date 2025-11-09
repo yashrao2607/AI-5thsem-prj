@@ -37,7 +37,7 @@ const extractTextFromDocumentFlow = ai.defineFlow(
   },
   async input => {
     const { text } = await ai.generate({
-        model: 'googleai/gemini-pro-vision',
+        model: 'googleai/gemini-1.5-flash-latest',
         prompt: `Extract all the text from the following document.
 
 Document: {{media url=fileDataUri}}`,

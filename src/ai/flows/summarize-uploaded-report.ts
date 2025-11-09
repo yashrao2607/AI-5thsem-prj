@@ -37,7 +37,7 @@ const summarizeUploadedReportFlow = ai.defineFlow(
   },
   async input => {
     const { text } = await ai.generate({
-        model: 'googleai/gemini-pro-vision',
+        model: 'googleai/gemini-1.5-flash-latest',
         prompt: `You are an expert AI assistant that summarizes reports and papers.
 
 Summarize the key findings of the following report.
