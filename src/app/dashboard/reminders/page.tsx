@@ -48,10 +48,10 @@ export default function RemindersPage() {
     setIsSending(true);
 
     const templateParams = {
-        'Patient Name': values.name,
-        'Reminder Message': values.message,
-        'Date': format(values.date, 'PPP'),
-        'Time': values.time,
+        'patient_name': values.name,
+        'reminder_message': values.message,
+        'date': format(values.date, 'PPP'),
+        'time': values.time,
         // This parameter is used by EmailJS to send to the correct recipient.
         // **IMPORTANT**: You must go to your EmailJS template settings and set the
         // "To Email" field to `{{to_email}}` for this to work.
@@ -77,7 +77,7 @@ export default function RemindersPage() {
       toast({
         variant: 'destructive',
         title: 'Error Sending Reminder',
-        description: 'Failed to send email. Please check your EmailJS credentials and template variables in your account dashboard.',
+        description: 'Failed to send email. Please check that your EmailJS template variables (e.g. {{patient_name}}) exactly match the keys sent from the app.',
       });
     } finally {
       setIsSending(false);
