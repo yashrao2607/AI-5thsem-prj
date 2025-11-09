@@ -37,6 +37,7 @@ const extractTextFromDocumentFlow = ai.defineFlow(
   },
   async input => {
     const { text } = await ai.generate({
+        model: 'gemini-pro-vision',
         prompt: `Extract all the text from the following document and return it in a JSON object with a single key "text".
 
 Document: {{media url=fileDataUri}}`,
