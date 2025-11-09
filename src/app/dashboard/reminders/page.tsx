@@ -47,20 +47,23 @@ export default function RemindersPage() {
   async function onSubmit(values: z.infer<typeof reminderFormSchema>) {
     setIsSending(true);
 
+    // IMPORTANT: The keys in this object MUST EXACTLY match the variable names in your EmailJS template.
+    // For example, if your template has {{patient_name}}, the key here must be 'patient_name'.
+    // Variable names in EmailJS cannot contain spaces or special characters.
     const templateParams = {
         'patient_name': values.name,
         'reminder_message': values.message,
         'date': format(values.date, 'PPP'),
         'time': values.time,
         // This parameter is used by EmailJS to send to the correct recipient.
-        // **IMPORTANT**: You must go to your EmailJS template settings and set the
+        // **VERY IMPORTANT**: You must go to your EmailJS template settings and set the
         // "To Email" field to `{{to_email}}` for this to work.
         'to_email': values.email,
     };
 
     try {
       const serviceID = 'service_ttbt6td';
-      const templateID = 'template_lfpi7id';
+      const templateID = 'template_651b2is';
       const publicKey = 'TD1Fw3yR8-K8hFRY1';
 
       await emailjs.send(serviceID, templateID, templateParams, publicKey);
@@ -74,10 +77,12 @@ export default function RemindersPage() {
       form.reset({ name: '', email: '', message: '', time: '09:00' });
 
     } catch (error: any) {
+      console.error('EmailJS Error:', error);
       toast({
         variant: 'destructive',
         title: 'Error Sending Reminder',
-        description: 'Failed to send email. Please check that your EmailJS template variables (e.g. {{patient_name}}) exactly match the keys sent from the app.',
+        description: "Failed to send email. Please check that your EmailJS template variables (e.g. {{patient_name}}, {{time}}) exactly match the keys sent from the app. Variables cannot contain spaces or special characters. Also, ensure the 'To Email' field in your template settings is set to {{to_email}}.",
+        duration: 10000,
       });
     } finally {
       setIsSending(false);
