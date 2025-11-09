@@ -93,11 +93,10 @@ export default function ReportsPage() {
 
       // 5. Index the report in ChromaDB
       const indexingResult = await indexReport({ text, reportId: docRef.id, userId: user.uid });
-      if (indexingResult.success) {
-        toast({ title: 'Indexing Complete', description: 'You can now ask questions about this report in the chat.' });
-      } else {
+      if (!indexingResult.success) {
         throw new Error("Failed to index the report for AI chat.");
       }
+      toast({ title: 'Indexing Complete', description: 'You can now ask questions about this report in the chat.' });
 
     } catch (err: any) {
       console.error("Error processing file:", err);
