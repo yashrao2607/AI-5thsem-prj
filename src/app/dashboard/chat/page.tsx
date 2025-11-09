@@ -23,10 +23,10 @@ export default function ChatPage() {
   const firestore = useFirestore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // This query is just to check if any reports exist to enable the input.
   const reportsQuery = useMemo(() => {
     if (!user || !firestore) return null;
-    // Query to get all reports for the current user
-    return query(collection(firestore, 'users', user.uid, 'reports'), orderBy('createdAt', 'desc'));
+    return query(collection(firestore, 'users', user.uid, 'reports'));
   }, [user, firestore]);
 
   const { data: reports, loading: reportsLoading } = useCollection(reportsQuery);
@@ -40,7 +40,7 @@ export default function ChatPage() {
   }, [messages, isLoading]);
 
   const handleSendMessage = async () => {
-    if (input.trim() === '' || isLoading) return;
+    if (input.trim() === '' || isLoading || !user) return;
 
     if (!reports || reports.length === 0) {
         toast({
@@ -53,21 +53,12 @@ export default function ChatPage() {
 
     const userMessage: Message = { sender: 'user', text: input };
     setMessages((prev) => [...prev, userMessage]);
+    const currentInput = input;
     setInput('');
     setIsLoading(true);
 
     try {
-        // Combine the text from all reports into a single context
-        const reportTexts = reports.map((report) => `Report Name: ${report.name}\nContent:\n${report.text}`).filter(Boolean);
-        
-        if (reportTexts.length === 0) {
-            const aiMessage: Message = { sender: 'ai', text: "It seems none of your uploaded reports contain extractable text. Please try uploading different documents." };
-            setMessages((prev) => [...prev, aiMessage]);
-            setIsLoading(false);
-            return;
-        }
-
-        const result = await answerQuestionsAboutReport({ reports: reportTexts, question: input });
+        const result = await answerQuestionsAboutReport({ question: currentInput, userId: user.uid });
         const aiMessage: Message = { sender: 'ai', text: result.answer };
         setMessages((prev) => [...prev, aiMessage]);
     } catch(error) {
@@ -156,5 +147,3 @@ export default function ChatPage() {
     </div>
   );
 }
-
-    

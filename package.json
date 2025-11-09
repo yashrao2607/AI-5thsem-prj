@@ -56,7 +56,8 @@
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.24.2",
     "chromadb": "^1.8.1",
-    "@chroma-core/default-embed": "^0.1.0"
+    "@chroma-core/default-embed": "^0.1.0",
+    "cohere-ai": "^7.10.0"
   },
   "devDependencies": {
     "@types/node": "^20",
