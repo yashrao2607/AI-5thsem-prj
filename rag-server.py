@@ -93,7 +93,7 @@ def process_document(file_path, file_name):
         raise
 
 # ----------------------------- #
-# VECTOR STORE
+# VECTOR STORE 
 # ----------------------------- #
 def get_vector_collection():
     """Get or create ChromaDB collection with Ollama embeddings"""
