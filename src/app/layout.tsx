@@ -4,6 +4,7 @@ import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { FloatingChatbot } from '@/components/floating-chatbot';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -33,6 +34,7 @@ export default function RootLayout({
           <FirebaseClientProvider>
             {children}
             <Toaster />
+            <FloatingChatbot />
           </FirebaseClientProvider>
         </ThemeProvider>
       </body>

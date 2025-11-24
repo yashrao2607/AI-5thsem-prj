@@ -1,0 +1,10 @@
+flask==2.3.3
+flask-cors==4.0.0
+chromadb==0.4.24
+ollama==0.1.0
+pandas==2.1.0
+langchain==0.1.0
+langchain-community==0.0.10
+sentence-transformers==2.2.2
+pymupdf==1.23.8
+python-docx==0.8.11

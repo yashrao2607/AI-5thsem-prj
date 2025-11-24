@@ -1,16 +1,9 @@
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { MessageCircle, FileText, Bell, Settings, ArrowRight } from 'lucide-react';
+import { FileText, Bell, Settings, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const dashboardItems = [
-  {
-    title: 'AI Chat',
-    description: 'Engage with our intelligent AI assistant.',
-    icon: MessageCircle,
-    href: '/dashboard/chat',
-    color: 'text-primary',
-  },
   {
     title: 'Reports',
     description: 'Upload and analyze your health reports.',

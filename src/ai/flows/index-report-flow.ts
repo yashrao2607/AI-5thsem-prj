@@ -43,7 +43,16 @@ let myCollection: Collection | null = null;
 const getMyCollection = async () => {
     if (!myCollection) {
       if (!process.env.COHERE_API_KEY) {
-        throw new Error("COHERE_API_KEY environment variable not set.");
+        throw new Error("Missing COHERE_API_KEY. Set it in .env.local");
+      }
+      if (!process.env.CHROMA_API_KEY) {
+        throw new Error("Missing CHROMA_API_KEY. Set it in .env.local");
+      }
+      if (!process.env.CHROMA_TENANT) {
+        throw new Error("Missing CHROMA_TENANT. Set it in .env.local");
+      }
+      if (!process.env.CHROMA_DATABASE) {
+        throw new Error("Missing CHROMA_DATABASE. Set it in .env.local");
       }
       const embedder = new CohereEmbeddingFunction(process.env.COHERE_API_KEY);
       const chromaClient = new CloudClient({

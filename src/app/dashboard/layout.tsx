@@ -4,7 +4,6 @@ import {
   Bell,
   Home,
   LineChart,
-  MessageCircle,
   Package,
   Package2,
   Settings,
@@ -38,7 +37,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const navItems = [
     { href: '/dashboard', icon: LayoutGrid, label: 'Dashboard' },
-    { href: '/dashboard/chat', icon: MessageCircle, label: 'AI Chat', badge: 'PRO' },
     { href: '/dashboard/reports', icon: FileText, label: 'Reports' },
     { href: '/dashboard/reminders', icon: Bell, label: 'Reminders' },
     { href: '/dashboard/settings', icon: Settings, label: 'Settings' },

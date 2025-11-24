@@ -5,18 +5,15 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Bot, User, Loader2, Paperclip } from 'lucide-react';
-import { answerQuestionsAboutReport } from '@/ai/flows/answer-questions-about-report';
 import { useToast } from "@/hooks/use-toast"
-import { useUser, useFirestore } from '@/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { extractTextFromDocument } from '@/ai/flows/extract-text-from-document';
-import { indexReport } from '@/ai/flows/index-report-flow';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useUser } from '@/firebase';
 
 type Message = {
   sender: 'user' | 'ai';
   text: string;
 };
+
+const RAG_API_URL = process.env.NEXT_PUBLIC_RAG_API_URL || 'http://localhost:8000';
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -26,7 +23,6 @@ export default function ChatPage() {
 
   const { toast } = useToast();
   const { user } = useUser();
-  const firestore = useFirestore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -38,58 +34,38 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages, isAsking, isProcessingFile]);
 
-  const readFileAsDataURL = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-      reader.readAsDataURL(file);
-    });
-  }
-
   const handleFileChange = async (files: FileList | null) => {
-    if (!files || files.length === 0 || !user || !firestore) return;
+    if (!files || files.length === 0 || !user) return;
     
     const file = files[0];
     if (!file) return;
 
     setIsProcessingFile(true);
-    toast({ title: 'Processing Document', description: 'Uploading, extracting text, and indexing for AI chat...' });
+    toast({ title: 'Processing Document', description: 'Uploading and indexing document...' });
     
     try {
-      const dataUri = await readFileAsDataURL(file);
-      const { text } = await extractTextFromDocument({ fileDataUri: dataUri });
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('user_id', user.uid);
 
-      if (!text) {
-        throw new Error("Could not extract text from the document.");
-      }
-
-      const storage = getStorage();
-      const storageRef = ref(storage, `users/${user.uid}/reports/${Date.now()}_${file.name}`);
-      const snapshot = await uploadBytes(storageRef, file);
-      const imageUrl = await getDownloadURL(snapshot.ref);
-
-      const reportsRef = collection(firestore, 'users', user.uid, 'reports');
-      const docRef = await addDoc(reportsRef, {
-        name: file.name,
-        text: text,
-        imageUrl: imageUrl,
-        createdAt: serverTimestamp(),
+      const uploadResponse = await fetch(`${RAG_API_URL}/api/upload`, {
+        method: 'POST',
+        body: formData
       });
-      
-      const indexingResult = await indexReport({ text, reportId: docRef.id, userId: user.uid });
-      if (!indexingResult.success) {
-        throw new Error("Failed to index the report for AI chat.");
+
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json();
+        throw new Error(errorData.detail || "Failed to upload document");
       }
-      
-      toast({ title: 'Processing Complete', description: 'You can now ask questions about this report.' });
+
+      const uploadResult = await uploadResponse.json();
+      toast({ title: 'Processing Complete', description: uploadResult.message });
 
     } catch (err: any) {
       console.error("Error processing file:", err);
-      toast({ variant: 'destructive', title: 'Processing Failed', description: err.message || 'There was an error processing your report.' });
+      toast({ variant: 'destructive', title: 'Processing Failed', description: err.message || 'There was an error processing your document.' });
     } finally {
         setIsProcessingFile(false);
-        // Reset file input
         if(fileInputRef.current) {
             fileInputRef.current.value = "";
         }
@@ -106,17 +82,35 @@ export default function ChatPage() {
     setIsAsking(true);
 
     try {
-        const result = await answerQuestionsAboutReport({ question: currentInput, userId: user.uid });
+        const queryResponse = await fetch(`${RAG_API_URL}/api/query`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            query: currentInput,
+            user_id: user.uid,
+            top_k: 5,
+            detail_level: 'detailed'
+          })
+        });
+
+        if (!queryResponse.ok) {
+          const errorData = await queryResponse.json();
+          throw new Error(errorData.detail || "Failed to get response");
+        }
+
+        const result = await queryResponse.json();
         const aiMessage: Message = { sender: 'ai', text: result.answer };
         setMessages((prev) => [...prev, aiMessage]);
     } catch(error) {
-        console.error("Error communicating with AI:", error);
+        console.error("Error communicating with RAG:", error);
         const errorMessage: Message = { sender: 'ai', text: "Sorry, I encountered an error while processing your question. Please try again." };
         setMessages((prev) => [...prev, errorMessage]);
         toast({
             variant: "destructive",
-            title: "AI Communication Error",
-            description: "There was an issue getting a response from the AI. Please check your connection and try again.",
+            title: "RAG System Error",
+            description: "There was an issue getting a response from the RAG system. Please check your connection and try again.",
         });
     } finally {
         setIsAsking(false);
